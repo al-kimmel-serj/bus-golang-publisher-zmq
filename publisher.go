@@ -52,27 +52,29 @@ func New[Payload proto.Message](
 	}, nil
 }
 
-func (p *Publisher[Payload]) Publish(eventKey bus.EventKey, eventPayload Payload) error {
-	buf := bytes.NewBuffer(p.topicPrefix)
+func (p *Publisher[Payload]) Publish(events []bus.Event[Payload]) error {
+	for _, event := range events {
+		buf := bytes.NewBuffer(p.topicPrefix)
 
-	if len(eventKey) > 0 {
-		buf.WriteString(string(eventKey))
-	}
-	buf.WriteByte(TopicAndPayloadDelimiter)
+		if len(event.EventKey) > 0 {
+			buf.WriteString(string(event.EventKey))
+		}
+		buf.WriteByte(TopicAndPayloadDelimiter)
 
-	msg, err := proto.Marshal(eventPayload)
-	if err != nil {
-		return fmt.Errorf("proto.Marshal error: %w", err)
-	}
+		msg, err := proto.Marshal(event.EventPayload)
+		if err != nil {
+			return fmt.Errorf("proto.Marshal error: %w", err)
+		}
 
-	_, err = buf.Write(msg)
-	if err != nil {
-		return fmt.Errorf("bytes.Buffer.Write error: %w", err)
-	}
+		_, err = buf.Write(msg)
+		if err != nil {
+			return fmt.Errorf("bytes.Buffer.Write error: %w", err)
+		}
 
-	_, err = p.zmqSocket.SendBytes(buf.Bytes(), 0)
-	if err != nil {
-		return fmt.Errorf("zmq4.Socket.SendBytes error: %w", err)
+		_, err = p.zmqSocket.SendBytes(buf.Bytes(), 0)
+		if err != nil {
+			return fmt.Errorf("zmq4.Socket.SendBytes error: %w", err)
+		}
 	}
 
 	return nil
