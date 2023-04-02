@@ -2,6 +2,7 @@ package bus_golang_publisher_zmq
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 
 	"github.com/al-kimmel-serj/bus-golang"
@@ -52,7 +53,7 @@ func New[Payload proto.Message](
 	}, nil
 }
 
-func (p *Publisher[Payload]) Publish(events []bus.Event[Payload]) error {
+func (p *Publisher[Payload]) Publish(_ context.Context, events []bus.Event[Payload]) error {
 	for _, event := range events {
 		buf := bytes.NewBuffer(p.topicPrefix)
 
