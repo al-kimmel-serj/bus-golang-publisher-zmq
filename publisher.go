@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/al-kimmel-serj/bus-golang"
 	"github.com/pebbe/zmq4"
@@ -21,6 +22,7 @@ type Publisher[Payload proto.Message] struct {
 	unregister  func() error
 	zmqContext  *zmq4.Context
 	zmqSocket   *zmq4.Socket
+	sendMx      sync.Mutex
 }
 
 func New[Payload proto.Message](
@@ -72,7 +74,9 @@ func (p *Publisher[Payload]) Publish(_ context.Context, events []bus.Event[Paylo
 			return fmt.Errorf("bytes.Buffer.Write error: %w", err)
 		}
 
+		p.sendMx.Lock()
 		_, err = p.zmqSocket.SendBytes(buf.Bytes(), 0)
+		p.sendMx.Unlock()
 		if err != nil {
 			return fmt.Errorf("zmq4.Socket.SendBytes error: %w", err)
 		}
